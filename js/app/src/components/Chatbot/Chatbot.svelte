@@ -24,10 +24,10 @@
 	const redirect_src_url = (src: string) =>
 		src.replace('src="/file', `src="${root}file`);
 
-	$: _value = value
-		? value.map(([user_msg, bot_msg]) => [
-				typeof user_msg === "string"
-					? redirect_src_url(user_msg)
+	$: _value = value 
+		? value.map(([user_msg, bot_msg]) => [ 
+				typeof user_msg === "string" 
+					? redirect_src_url(user_msg) 
 					: normalise_file(user_msg, root, root_url),
 				typeof bot_msg === "string"
 					? redirect_src_url(bot_msg)

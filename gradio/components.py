@@ -4190,12 +4190,15 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
         if chat_message is None:
             return None
         elif isinstance(chat_message, dict):
-            if chat_message["alt_text"] is not None:
+            if chat_message["user_message"] is not None and chat_message["alt_text"] is not None:
+                return (chat_message["name"], chat_message["alt_text"], chat_message["user_message"])
+            elif chat_message["alt_text"] is not None:
                 return (chat_message["name"], chat_message["alt_text"])
             else:
                 return (chat_message["name"],)
         else:  # string
             return chat_message
+
 
     def preprocess(
         self,
@@ -4208,9 +4211,7 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
             assert isinstance(
                 message_pair, (tuple, list)
             ), f"Expected a list of lists or list of tuples. Received: {message_pair}"
-            assert (
-                len(message_pair) == 2
-            ), f"Expected a list of lists of length 2 or list of tuples of length 2. Received: {message_pair}"
+
             processed_messages.append(
                 [
                     self._preprocess_chat_messages(message_pair[0]),
@@ -4224,6 +4225,19 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
     ) -> str | Dict | None:
         if chat_message is None:
             return None
+        # # check if it's a tuple or list. if it is a tuple check for length 3
+        elif isinstance(chat_message, (tuple, list)) and len(chat_message) == 3:
+            filepath = chat_message[0]
+            mime_type = client_utils.get_mimetype(filepath)
+            filepath = self.make_temp_copy_if_needed(filepath)
+            return {
+                "name": filepath,
+                "mime_type": mime_type,
+                "alt_text": chat_message[1],
+                "user_message": chat_message[2] if chat_message[2] is not None else "", # Update here
+                "data": None,  # These last two fields are filled in by the frontend
+                "is_file": True,
+            }
         elif isinstance(chat_message, (tuple, list)):
             filepath = chat_message[0]
             mime_type = client_utils.get_mimetype(filepath)
@@ -4232,9 +4246,12 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
                 "name": filepath,
                 "mime_type": mime_type,
                 "alt_text": chat_message[1] if len(chat_message) > 1 else None,
+                "user_message": "", # Add this field
                 "data": None,  # These last two fields are filled in by the frontend
                 "is_file": True,
             }
+
+            
         elif isinstance(chat_message, str):
             chat_message = chat_message.replace("\n", "<br>")
             return self.md.renderInline(chat_message)
@@ -4253,6 +4270,7 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
         """
         if y is None:
             return []
+ 
         processed_messages = []
         for message_pair in y:
             assert isinstance(
@@ -4283,6 +4301,7 @@ class Chatbot(Changeable, Selectable, IOComponent, JSONSerializable):
             **kwargs,
         )
         return self
+
 
 
 @document("style")

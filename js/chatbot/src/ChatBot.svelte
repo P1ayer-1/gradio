@@ -2,12 +2,13 @@
 	import { beforeUpdate, afterUpdate, createEventDispatcher } from "svelte";
 	import type { Styles, SelectData } from "@gradio/utils";
 	import type { FileData } from "@gradio/upload";
+	import type { MultimodalData } from "@gradio/chatbot";
 
 	export let value: Array<
-		[string | FileData | null, string | FileData | null]
+		[string | FileData | MultimodalData | null, string | FileData | MultimodalData | null]
 	> | null;
 	let old_value: Array<
-		[string | FileData | null, string | FileData | null]
+		[string | FileData | MultimodalData| null, string | FileData | MultimodalData | null]
 	> | null = null;
 	export let pending_message: boolean = false;
 	export let feedback: Array<string> | null = null;
@@ -65,8 +66,10 @@
 						on:click={() =>
 							dispatch("select", { index: [i, j], value: message })}
 					>
+					
+					
 						{#if typeof message === "string"}
-							{@html message}
+							{message}
 							{#if feedback && j == 1}
 								<div class="feedback">
 									{#each feedback as f}
@@ -74,6 +77,32 @@
 									{/each}
 								</div>
 							{/if}
+							
+						{:else if message!== null && message.user_message!== null && message.mime_type?.includes("image")} 
+						{message.user_message}
+						<img src={message.data} alt={message.alt_text} />
+						{:else if message!== null && message.user_message!== null && message.mime_type?.includes("audio")}
+						{message.user_message}
+						<audio
+							controls
+							preload="metadata"
+							src={message.data}
+							title={message.alt_text}
+							on:play
+							on:pause
+							on:ended
+						/>
+						{:else if message!== null && message.user_message!== null && message.mime_type?.includes("video")}
+						{message.user_message}
+						<video
+							controls
+							preload="metadata"
+							src={message.data}
+							title={message.alt_text}
+							on:play
+							on:pause
+							on:ended
+						/>
 						{:else if message !== null && message.mime_type?.includes("audio")}
 							<audio
 								controls
@@ -96,7 +125,7 @@
 							>
 								<track kind="captions" />
 							</video>
-						{:else if message !== null && message.mime_type?.includes("image")}
+							{:else if message!== null && message.mime_type?.includes("image")}
 							<img src={message.data} alt={message.alt_text} />
 						{/if}
 					</div>
